@@ -24,25 +24,24 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import CustomDropdown from '../CustomDropdown';
 
-interface UnitData {
-    Unit: string;
-    Description: string;
+interface PalletData {
+    id: number;
+    PalletBarcode: string;
+    Qty: number;
+    Height: number;
+    Width: number;
+    Status: string;
     CreatedOn: string;
     CreatedBy: string;
     UpdatedBy: string;
     UpdatedOn: string;
-  }
+}
   
-  interface SaveApiResponse {
-    status: 'Success' | 'Failure';
-    message: string;
-  }
-  interface UpdateApiResponse {
-    status: 'Success' | 'Failure';
-    message: string;
-  }
-  
+interface PlantCode {
+  PlantCode: string;
+}
   
 
 const getUserID = () => {
@@ -57,16 +56,33 @@ const getUserID = () => {
   }
   return 'Guest';
 };
+interface DropdownOption {
+  value: string;
+  label: string;
+}
+const PalletMaster: React.FC = () => {
+    const [printerMakeModel, setPrinterMakeModel] = useState<string>('');
+    const [printerName, setPrinterName] = useState<string>('');
+    const [printerSrNo, setPrinterSrNo] = useState<string>('');
+    const [printerIPPort, setPrinterIPPort] = useState<string>('');
+    const [plantCode , setPlantCode] = useState<string>('');
+    const [plantCodes, setPlantCodes] = useState<DropdownOption[]>([]);
 
-const UOMMaster: React.FC = () => {
-    const [unit, setUnit] = useState<string>('');
-    const [unitDesc, setUnitDesc] = useState<string>('');
-    const [data, setData] = useState<UnitData[]>([]);
+    const [dpi, setDpi] = useState<string>('');
+    const [assetCode, setAssetCode] = useState<string>('');
+    const [defaultPrinter, setDefaultPrinter] = useState<string>('');
+    const [status, setStatus] = useState<string>('');
+    const [data, setData] = useState<PalletData[]>([]);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
     const { toast } = useToast();
-    const unitRef = useRef<HTMLInputElement>(null);
-    const descRef = useRef<HTMLInputElement>(null);
+    const printerMakeModelRef = useRef<HTMLInputElement>(null);
+    const printerNameRef = useRef<HTMLInputElement>(null);
+    const printerSrNoRef = useRef<HTMLInputElement>(null);
+    const printerIPPortRef = useRef<HTMLInputElement>(null);
+    const dpiRef = useRef<HTMLInputElement>(null);
+    const assetCodeRef = useRef<HTMLInputElement>(null);
+    const defaultPrinterRef = useRef<HTMLInputElement>(null);
     const token = Cookies.get('token');
   // for search and pagination
     const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -77,6 +93,8 @@ const UOMMaster: React.FC = () => {
       const executeSequentially = async () => {
         await delay(20);
         await fetchData();
+        await delay(50);
+        await fetchPlantCodes()
         await delay(50);
         // await insertAuditTrail({
         //   AppType: "Web",
@@ -92,10 +110,27 @@ const UOMMaster: React.FC = () => {
       executeSequentially();
      
     }, []);
+
+    
+  const fetchPlantCodes = async () => {
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-code`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
+      const data: PlantCode[] = await response.json();
+      setPlantCodes(data.map(item => ({ value: item.PlantCode, label: item.PlantCode })));
+    } catch (error) {
+      console.error('Error fetching plant codes:', error);
+      toast({ title: "Error", description: "Failed to fetch plant codes", variant: "destructive" });
+    }
+  };
   
     const fetchData = async () => {
       try {
-        const response = await axios.get<UnitData[]>(`${BACKEND_URL}/api/master/all-uom-details`, {
+        const response = await axios.get<PalletData[]>(`${BACKEND_URL}/api/master/pallet-all-details`, {
           headers: { authorization: `Bearer ${token}` }
         });
         setData(response.data);
@@ -112,15 +147,20 @@ const UOMMaster: React.FC = () => {
     const handlePageChange = useCallback((newPage: number) => {
       setCurrentPage(newPage);
     }, []);
-    const handleRowSelect = (row: UnitData) => {
-      setUnit(row.Unit);
-      setUnitDesc(row.Description);
-      setSelectedUnit(row.Unit);
-      setIsEditing(true);
+    const handleRowSelect = (row: PalletData) => {
+    setPrinterMakeModel(row.PalletBarcode);
+    setPrinterName(row.Qty.toString());
+    setPrinterSrNo(row.Height.toString());
+    setPrinterIPPort(row.Width.toString());
+    setDpi(row.Status);
+    setAssetCode(row.CreatedBy);
+    setDefaultPrinter(row.UpdatedBy);
+    setStatus(row.Status);
+    setIsEditing(true);
       // insertAuditTrail({
       //   AppType: "Web",
-      //   Activity: "UOM Master",
-      //   Action: `UOM Edit Initiated by ${getUserID()}`,
+      //   Activity: "Pallet Master",
+      //   Action: `Pallet Edit Initiated by ${getUserID()}`,
       //   NewData: "",
       //   OldData: JSON.stringify(row),
       //   Remarks: "",
@@ -130,44 +170,80 @@ const UOMMaster: React.FC = () => {
     };
   
     const handleCancel = () => {
-      setUnit('');
-      setUnitDesc('');
+      setPrinterMakeModel('');
+      setPrinterName('');
+      setPrinterSrNo('');
+      setPrinterIPPort('');
+      setDpi('');
+      setAssetCode('');
+      setDefaultPrinter('');
+      setStatus('');
       setIsEditing(false);
       setSelectedUnit(null);
     };
   
     const handleSave = async () => {
-      if (!unit) {
-        sooner("Please fill the unit for UOM");
-        unitRef.current?.focus();
-        return;
-      }
-      if (!unitDesc) {
-        sooner("Please fill the unit description for UOM");
-        unitRef.current?.focus();
-        return;
-      }
-  
+    if (!printerMakeModel) {
+      sooner("Please fill the printer make-model");
+      printerMakeModelRef.current?.focus();
+      return;
+    }
+    if (!printerName) {
+      sooner("Please fill the printer name");
+      printerNameRef.current?.focus();
+      return;
+    }
+    if (!printerSrNo) {
+      sooner("Please fill the printer serial number");
+      printerSrNoRef.current?.focus();
+      return;
+    }
+    if (!printerIPPort) {
+      sooner("Please fill the printer IP:Port");
+      printerIPPortRef.current?.focus();
+      return;
+    }
+    if (!dpi) {
+      sooner("Please fill the DPI");
+      dpiRef.current?.focus();
+      return;
+    }
+    if (!assetCode) {
+      sooner("Please fill the asset code");
+      assetCodeRef.current?.focus();
+      return;
+    }
+    if (!defaultPrinter) {
+      sooner("Please fill the default printer");
+      defaultPrinterRef.current?.focus();
+      return;
+    }
+    if (!status) {
+      sooner("Please select the status");
+      return;
+    }
       try {
         const newUnitData = {
-          unit,
-          description: unitDesc,
-          user: getUserID(),
+          PalletBarcode: palletBarcode,
+          Qty: quantity,
+          Height: height,
+          Width: width,
+          CreatedBy: getUserID(),
         };
-  
-        const response = await axios.post<SaveApiResponse>(`${BACKEND_URL}/api/master/insert-uom-details`, newUnitData, {
+
+        const response = await axios.post(`${BACKEND_URL}/api/master/insert-pallet-master`, newUnitData, {
           headers: { 
             'Content-Type': 'application/json',
             authorization: `Bearer ${token}`
           },
         });
   
-        const { status, message } = response.data;
+        const { Status, Message } = response.data[0];
   
-        if (status === 'Success') {
+        if (Status === 'T') {
           toast({
             title: 'Success',
-            description: message,
+            description: Message,
           });
           fetchData();
           handleCancel();
@@ -181,10 +257,10 @@ const UOMMaster: React.FC = () => {
           //   UserId: getUserID(),
           //   PlantCode: getUserPlant(),
           // });
-        } else if (status === 'Failure') {
+        } else if (Status === 'F') {
           toast({
             title: 'Error',
-            description: message,
+            description: Message,
             variant: 'destructive'
           });
         } else {
@@ -207,36 +283,65 @@ const UOMMaster: React.FC = () => {
   
     const handleUpdate = async () => {
       if (!selectedUnit) return;
-      if (!unit) {
-        sooner("Please fill the unit for UOM");
-        unitRef.current?.focus();
-        return;
-      }
-      if (!unitDesc) {
-        sooner("Please fill the unit description for UOM");
-        unitRef.current?.focus();
-        return;
-      }
+    if (!printerMakeModel) {
+      sooner("Please fill the printer make-model");
+      printerMakeModelRef.current?.focus();
+      return;
+    }
+    if (!printerName) {
+      sooner("Please fill the printer name");
+      printerNameRef.current?.focus();
+      return;
+    }
+    if (!printerSrNo) {
+      sooner("Please fill the printer serial number");
+      printerSrNoRef.current?.focus();
+      return;
+    }
+    if (!printerIPPort) {
+      sooner("Please fill the printer IP:Port");
+      printerIPPortRef.current?.focus();
+      return;
+    }
+    if (!dpi) {
+      sooner("Please fill the DPI");
+      dpiRef.current?.focus();
+      return;
+    }
+    if (!assetCode) {
+      sooner("Please fill the asset code");
+      assetCodeRef.current?.focus();
+      return;
+    }
+    if (!defaultPrinter) {
+      sooner("Please fill the default printer");
+      defaultPrinterRef.current?.focus();
+      return;
+    }
+    if (!status) {
+      sooner("Please select the status");
+      return;
+    }
       try {
         const updatedUnit = {
-          unit,
-          description: unitDesc,
-          user: getUserID(),
+          PalletBarcode: palletBarcode,
+          Qty: quantity,
+          UpdatedBy: getUserID(),
         };
   
-        const response = await axios.patch<UpdateApiResponse>(`${BACKEND_URL}/api/master/update-uom-details`, updatedUnit, {
+        const response = await axios.post(`${BACKEND_URL}/api/master/update-pallet-master`, updatedUnit, {
           headers: { 
             'Content-Type': 'application/json',
             authorization: `Bearer ${token}`
           },
         });
   
-        const { status, message } = response.data;
+        const { Status, Message } = response.data[0];
   
-        if (status === 'Success') {
+        if (Status === 'T') {
           toast({
             title: "Success",
-            description: message
+            description: Message
           });
           fetchData();
           handleCancel();
@@ -251,10 +356,10 @@ const UOMMaster: React.FC = () => {
           //   UserId: getUserID(),
           //   PlantCode: getUserPlant()
           // });
-        } else if (status === 'Failure') {
+        } else if (Status === 'F') {
           toast({
             title: "Error",
-            description: message,
+            description: Message,
             variant: "destructive"
           });
         } else {
@@ -268,7 +373,7 @@ const UOMMaster: React.FC = () => {
         console.error('Error updating data:', error);
         toast({
           title: "Error",
-          description: "Failed to update UOM",
+          description: "Failed to update Pallet Barcode",
           variant: "destructive"
         });
       }
@@ -276,7 +381,7 @@ const UOMMaster: React.FC = () => {
   
     const filteredData = useMemo(() => {
       return data.filter(item => {
-        const searchableFields: (keyof UnitData)[] = ['Description', 'Unit','UpdatedBy','CreatedBy'];
+        const searchableFields: (keyof PalletData)[] = ['PalletBarcode', 'Qty', 'Height', 'Width', 'Status', 'CreatedBy', 'UpdatedBy'];
         return searchableFields.some(key => {
           const value = item[key];
           return value != null && value.toString().toLowerCase().includes(searchTerm.toLowerCase());
@@ -302,31 +407,108 @@ const UOMMaster: React.FC = () => {
     <>
       <Card className="w-full mx-auto mt-5">
         <CardHeader>
-          <CardTitle>UOM Master <span className='font-normal text-sm text-muted-foreground'>(* Fields Are Mandatory)</span></CardTitle>
+          <CardTitle>Printer Master <span className='font-normal text-sm text-muted-foreground'>(* Fields Are Mandatory)</span></CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoryCode">Unit *</Label>
-                <Input 
-                  id="categoryCode" 
-                  value={unit} 
-                  onChange={(e) => setUnit(e.target.value)} 
-                  ref={unitRef}
-                  required 
+            <div className="space-y-2">
+                <Label htmlFor="plantCode">Plant Code *</Label>
+                <CustomDropdown
+                  options={plantCodes}
+                  value={plantCode}
+                  onValueChange={setPlantCode}
+                  placeholder="Select plant code..."
+                  searchPlaceholder="Search plant code..."
+                  emptyText="No plant code found."
                   disabled={isEditing}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="categoryDesc">Description *</Label>
+                <Label htmlFor="printerMakeModel">Printer Make-Model *</Label>
                 <Input 
-                  id="categoryDesc" 
-                  value={unitDesc} 
-                  ref={descRef}
-                  onChange={(e) => setUnitDesc(e.target.value)} 
+                  id="printerMakeModel" 
+                  value={printerMakeModel} 
+                  onChange={(e) => setPrinterMakeModel(e.target.value)} 
                   required 
+                  disabled={isEditing}
+                  ref={printerMakeModelRef}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="printerName">Printer Name *</Label>
+                <Input 
+                  id="printerName" 
+                  value={printerName} 
+                  onChange={(e) => setPrinterName(e.target.value)} 
+                  required 
+                  ref={printerNameRef}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="printerSrNo">Printer SrNo *</Label>
+                <Input 
+                  id="printerSrNo" 
+                  value={printerSrNo} 
+                  onChange={(e) => setPrinterSrNo(e.target.value)} 
+                  required 
+                  disabled={isEditing}
+                    ref={printerSrNoRef}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="printerIPPort">Printer IP:Port *</Label>
+                <Input 
+                  id="printerIPPort" 
+                  value={printerIPPort} 
+                  onChange={(e) => setPrinterIPPort(e.target.value)} 
+                  required 
+                    ref={printerIPPortRef}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dpi">Dpi *</Label>
+                <Input 
+                  id="dpi" 
+                  value={dpi} 
+                  onChange={(e) => setDpi(e.target.value)} 
+                  required 
+                    ref={dpiRef}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="assetCode">Asset Code *</Label>
+                <Input 
+                  id="assetCode" 
+                  value={assetCode} 
+                  onChange={(e) => setAssetCode(e.target.value)} 
+                  required 
+                    ref={assetCodeRef}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Default Printer *</Label>
+                <Select value={defaultPrinter} onValueChange={setDefaultPrinter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Yes or No " />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Yes">Yes</SelectItem>
+                    <SelectItem value="No">No</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="flex justify-end space-x-2">
@@ -357,8 +539,11 @@ const UOMMaster: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Select</TableHead>
-                  <TableHead>UNIT</TableHead>
-                  <TableHead>UNIT Description</TableHead>
+                  <TableHead>Pallet Barcode</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Height</TableHead>
+                  <TableHead>Width</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Created by</TableHead>
                   <TableHead>Created on</TableHead>
                   <TableHead>Updated by</TableHead>
@@ -367,16 +552,19 @@ const UOMMaster: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredData.map((row) => (
-                  <TableRow key={row.Unit}>
+                  <TableRow key={row.id}>
                     <TableCell>
                       <Button variant={'ghost'} onClick={() => handleRowSelect(row)}>Select</Button>
                     </TableCell>
-                    <TableCell>{row.Unit}</TableCell>
-                    <TableCell>{row.Description}</TableCell>
+                    <TableCell>{row.PalletBarcode}</TableCell>
+                    <TableCell>{row.Qty}</TableCell>
+                    <TableCell>{row.Height}</TableCell>
+                    <TableCell>{row.Width}</TableCell>
+                    <TableCell>{row.Status}</TableCell>
                     <TableCell>{row.CreatedBy}</TableCell>
                     <TableCell>{new Date(row.CreatedOn).toLocaleDateString()}</TableCell>
                     <TableCell>{row.UpdatedBy}</TableCell>
-                    <TableCell>{row.UpdatedOn? new Date(row.UpdatedOn).toLocaleDateString(): ""}</TableCell>
+                    <TableCell>{row.UpdatedOn ? new Date(row.UpdatedOn).toLocaleDateString() : ""}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -440,4 +628,4 @@ const UOMMaster: React.FC = () => {
   );
 };
 
-export default UOMMaster;
+export default PalletMaster;

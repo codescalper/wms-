@@ -47,7 +47,7 @@ const LineMaster: React.FC = () => {
   const [lines, setLines] = useState<Line[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-
+  const token = Cookies.get('token');
   useEffect(() => {
     const fetchDataSequentially = async () => {
       await delay(20);
@@ -55,16 +55,16 @@ const LineMaster: React.FC = () => {
       await delay(50);
       fetchLines();
       await delay(50);
-      await   insertAuditTrail({
-        AppType: "Web",
-        Activity: "Line Master",
-        Action: `Line Master Opened by ${getUserID()}`,
-        NewData: "",
-        OldData: "",
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: getUserPlant()
-      });
+      // await   insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Line Master",
+      //   Action: `Line Master Opened by ${getUserID()}`,
+      //   NewData: "",
+      //   OldData: "",
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: getUserPlant()
+      // });
     };
     fetchDataSequentially();
   }, []);
@@ -72,9 +72,13 @@ const LineMaster: React.FC = () => {
 
   const fetchPlantNames = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-name`);
-      const data: { PlantName: string }[] = await response.json();
-      setPlantOptions(data.map(item => ({ value: item.PlantName, label: item.PlantName })));
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-code`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
+      const data: { PlantCode: string }[] = await response.json();
+      setPlantOptions(data.map(item => ({ value: item.PlantCode, label: item.PlantCode })));
     } catch (error) {
       console.error('Error fetching plant names:', error);
       toast({ title: "Error", description: "Failed to fetch plant names", variant: "destructive" });
@@ -83,7 +87,11 @@ const LineMaster: React.FC = () => {
 
   const fetchLines = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/get-all-line`);
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-line`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       const data: Line[] = await response.json();
       setLines(data);
     } catch (error) {
@@ -122,7 +130,10 @@ const LineMaster: React.FC = () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/master/insert-line`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           plant: formData.Plant,
           lineCode: formData.LineCode,
@@ -137,16 +148,16 @@ const LineMaster: React.FC = () => {
         resetForm();
 
         // Insert audit trail for save action
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Line Master",
-          Action: `New Line Added by ${getUserID()}`,
-          NewData: JSON.stringify(formData),
-          OldData: "",
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: formData.Plant
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Line Master",
+        //   Action: `New Line Added by ${getUserID()}`,
+        //   NewData: JSON.stringify(formData),
+        //   OldData: "",
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: formData.Plant
+        // });
       } else {
         toast({ title: "Error", description: "Failed to save line", variant: "destructive" });
       }
@@ -161,7 +172,10 @@ const LineMaster: React.FC = () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/master/update-line`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           plant: formData.Plant,
           lineCode: formData.LineCode,
@@ -187,16 +201,16 @@ const LineMaster: React.FC = () => {
         }
 
         // Insert audit trail for update action
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Line Master",
-          Action: `Line Updated by ${getUserID()}`,
-          NewData: changedFields.join(", "),
-          OldData: JSON.stringify(oldLine),
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: formData.Plant
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Line Master",
+        //   Action: `Line Updated by ${getUserID()}`,
+        //   NewData: changedFields.join(", "),
+        //   OldData: JSON.stringify(oldLine),
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: formData.Plant
+        // });
       } else {
         toast({ title: "Error", description: "Failed to update line", variant: "destructive" });
       }
@@ -217,16 +231,16 @@ const LineMaster: React.FC = () => {
     setEditingId(line.LID);
 
     // Insert audit trail for edit action
-    insertAuditTrail({
-      AppType: "Web",
-      Activity: "Line Master",
-      Action: `Line Edit Initiated by ${getUserID()}`,
-      NewData: "",
-      OldData: JSON.stringify(line),
-      Remarks: "",
-      UserId: getUserID(),
-      PlantCode: ""
-    });
+    // insertAuditTrail({
+    //   AppType: "Web",
+    //   Activity: "Line Master",
+    //   Action: `Line Edit Initiated by ${getUserID()}`,
+    //   NewData: "",
+    //   OldData: JSON.stringify(line),
+    //   Remarks: "",
+    //   UserId: getUserID(),
+    //   PlantCode: ""
+    // });
   };
 
   const resetForm = () => {
@@ -245,7 +259,7 @@ const LineMaster: React.FC = () => {
           <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="plant">Plant *</Label>
+                <Label htmlFor="plant">Plant Code *</Label>
                 <CustomDropdown
                   options={plantOptions}
                   value={formData.Plant}

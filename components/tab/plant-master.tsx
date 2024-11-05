@@ -13,7 +13,7 @@ import CustomDropdown from '../CustomDropdown';
 import { BACKEND_URL } from '@/lib/constants';
 import { useToast } from "@/components/ui/use-toast";
 import { toast as sooner } from "sonner";
-import insertAuditTrail from '@/utills/insertAudit';
+// import insertAuditTrail from '@/utills/insertAudit';
 import { logError } from '@/utills/loggingException';
 import { delay } from '@/utills/delay';
 import TableSearch from '@/utills/tableSearch';
@@ -76,7 +76,7 @@ const PlantMasterForm = () => {
   const [oldData, setOldData] = useState<PlantDetail | null>(null);
   const { toast } = useToast();
 // for search and pagination
-
+const token = Cookies.get('token');
 const [itemsPerPage, setItemsPerPage] = useState(10);
 const [currentPage, setCurrentPage] = useState(1);
 const [searchTerm, setSearchTerm] = useState('');
@@ -90,16 +90,16 @@ const plantNameRef = useRef<HTMLInputElement>(null);
       await delay(50);
       fetchPlantDetails();
       await delay(50);
-      await insertAuditTrail({
-        AppType: "Web",
-        Activity: "Plant Master",
-        Action: `Plant Master Opened by ${getUserID()}`,
-        NewData: "",
-        OldData: "",
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: ""
-      });
+      // await insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Plant Master",
+      //   Action: `Plant Master Opened by ${getUserID()}`,
+      //   NewData: "",
+      //   OldData: "",
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: ""
+      // });
     };
     fetchDataSequentially();
   }, []);
@@ -107,7 +107,11 @@ const plantNameRef = useRef<HTMLInputElement>(null);
 
   const fetchCompanyNames = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/master/company-name`);
+      const response = await axios.get(`${BACKEND_URL}/api/master/company-name`, {
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
       const options: CompanyOption[] = response.data.map((company: { CompanyName: string }) => ({
         value: company.CompanyName,
         label: company.CompanyName
@@ -120,7 +124,11 @@ const plantNameRef = useRef<HTMLInputElement>(null);
 
   const fetchPlantDetails = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/master/pm-all-details`);
+      const response = await axios.get(`${BACKEND_URL}/api/master/pm-all-details`, {
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
       setData(response.data);
     } catch (error: any) {
       console.error('Error fetching plant details:', error);
@@ -189,17 +197,17 @@ const plantNameRef = useRef<HTMLInputElement>(null);
     setIsUpdateMode(true);
     setSelectedPlantId(row.PlantID);
 
-    // Insert audit trail for edit action
-    insertAuditTrail({
-      AppType: "Web",
-      Activity: "Plant Master",
-      Action: `Plant Edit Initiated by ${getUserID()}`,
-      NewData: "",
-      OldData: JSON.stringify(row),
-      Remarks: "",
-      UserId: getUserID(),
-      PlantCode: row.PlantCode
-    });
+    // // Insert audit trail for edit action
+    // insertAuditTrail({
+    //   AppType: "Web",
+    //   Activity: "Plant Master",
+    //   Action: `Plant Edit Initiated by ${getUserID()}`,
+    //   NewData: "",
+    //   OldData: JSON.stringify(row),
+    //   Remarks: "",
+    //   UserId: getUserID(),
+    //   PlantCode: row.PlantCode
+    // });
   };
 
   const handleSave = async () => {
@@ -229,7 +237,11 @@ const plantNameRef = useRef<HTMLInputElement>(null);
         Createdby: getUserID(),
       };
   
-      const response = await axios.post(`${BACKEND_URL}/api/master/pm-insert-details`, newPlantData);
+      const response = await axios.post(`${BACKEND_URL}/api/master/pm-insert-details`, newPlantData, {
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
       const responseData = response.data; 
   
       if (responseData.status === "T") {
@@ -240,17 +252,17 @@ const plantNameRef = useRef<HTMLInputElement>(null);
         fetchPlantDetails(); 
         handleCancel(); 
   
-        // Insert audit trail for save action
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Plant Master",
-          Action: `New Plant Added by ${getUserID()}`,
-          NewData: JSON.stringify(newPlantData),
-          OldData: "",
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: plantCode
-        });
+        // // Insert audit trail for save action
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Plant Master",
+        //   Action: `New Plant Added by ${getUserID()}`,
+        //   NewData: JSON.stringify(newPlantData),
+        //   OldData: "",
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: plantCode
+        // });
       } else if (responseData.status === "F") {
         toast({
           variant: 'destructive',
@@ -300,7 +312,11 @@ const plantNameRef = useRef<HTMLInputElement>(null);
         Updatedby: getUserID()
       };
 
-      const response = await axios.patch(`${BACKEND_URL}/api/master/pm-update-details`, updatedPlantData);
+      const response = await axios.patch(`${BACKEND_URL}/api/master/pm-update-details`, updatedPlantData, {
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
       toast({
         title: "Success",
         description: "Plant details updated successfully",
@@ -317,16 +333,16 @@ const plantNameRef = useRef<HTMLInputElement>(null);
       if (oldData.Status !== status) changedFields.push(`Status: ${oldData.Status} -> ${status}`);
 
       // Insert audit trail for update action
-      insertAuditTrail({
-        AppType: "Web",
-        Activity: "Plant Master",
-        Action: `Plant Updated by ${getUserID()}`,
-        NewData: changedFields.join(", "),
-        OldData: JSON.stringify(oldData),
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: plantCode
-      });
+      // insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Plant Master",
+      //   Action: `Plant Updated by ${getUserID()}`,
+      //   NewData: changedFields.join(", "),
+      //   OldData: JSON.stringify(oldData),
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: plantCode
+      // });
     } catch (error:any) {
       const errorMessage = error.response?.data?.error || error.message;
       logError((errorMessage).toLocaleString(),error, 'Plant Master Catch error while updating', getUserID());

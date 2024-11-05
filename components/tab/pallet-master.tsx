@@ -25,24 +25,20 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-interface UnitData {
-    Unit: string;
-    Description: string;
+interface PalletData {
+    id: number;
+    PalletBarcode: string;
+    Qty: number;
+    Height: number;
+    Width: number;
+    Status: string;
     CreatedOn: string;
     CreatedBy: string;
     UpdatedBy: string;
     UpdatedOn: string;
-  }
+}
   
-  interface SaveApiResponse {
-    status: 'Success' | 'Failure';
-    message: string;
-  }
-  interface UpdateApiResponse {
-    status: 'Success' | 'Failure';
-    message: string;
-  }
-  
+
   
 
 const getUserID = () => {
@@ -58,10 +54,12 @@ const getUserID = () => {
   return 'Guest';
 };
 
-const UOMMaster: React.FC = () => {
-    const [unit, setUnit] = useState<string>('');
-    const [unitDesc, setUnitDesc] = useState<string>('');
-    const [data, setData] = useState<UnitData[]>([]);
+const PalletMaster: React.FC = () => {
+    const [palletBarcode, setPalletBarcode] = useState<string>('');
+    const [quantity, setQuantity] = useState<number>();
+    const [width, setWidth] = useState<number>();
+    const [height, setHeight] = useState<number>();
+    const [data, setData] = useState<PalletData[]>([]);
     const [isEditing, setIsEditing] = useState<boolean>(false);
     const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
     const { toast } = useToast();
@@ -95,7 +93,7 @@ const UOMMaster: React.FC = () => {
   
     const fetchData = async () => {
       try {
-        const response = await axios.get<UnitData[]>(`${BACKEND_URL}/api/master/all-uom-details`, {
+        const response = await axios.get<PalletData[]>(`${BACKEND_URL}/api/master/pallet-all-details`, {
           headers: { authorization: `Bearer ${token}` }
         });
         setData(response.data);
@@ -112,15 +110,17 @@ const UOMMaster: React.FC = () => {
     const handlePageChange = useCallback((newPage: number) => {
       setCurrentPage(newPage);
     }, []);
-    const handleRowSelect = (row: UnitData) => {
-      setUnit(row.Unit);
-      setUnitDesc(row.Description);
-      setSelectedUnit(row.Unit);
+    const handleRowSelect = (row: PalletData) => {
+      setPalletBarcode(row.PalletBarcode);
+      setQuantity(row.Qty);
+      setWidth(row.Width);
+      setHeight(row.Height);
+      setSelectedUnit(row.Status);
       setIsEditing(true);
       // insertAuditTrail({
       //   AppType: "Web",
-      //   Activity: "UOM Master",
-      //   Action: `UOM Edit Initiated by ${getUserID()}`,
+      //   Activity: "Pallet Master",
+      //   Action: `Pallet Edit Initiated by ${getUserID()}`,
       //   NewData: "",
       //   OldData: JSON.stringify(row),
       //   Remarks: "",
@@ -130,44 +130,58 @@ const UOMMaster: React.FC = () => {
     };
   
     const handleCancel = () => {
-      setUnit('');
-      setUnitDesc('');
+      setPalletBarcode('');
+      setQuantity(0);
+      setWidth(0);
+      setHeight(0);
       setIsEditing(false);
       setSelectedUnit(null);
     };
   
     const handleSave = async () => {
-      if (!unit) {
-        sooner("Please fill the unit for UOM");
+      if (!palletBarcode) {
+        sooner("Please fill the palletbarcode");
         unitRef.current?.focus();
         return;
       }
-      if (!unitDesc) {
-        sooner("Please fill the unit description for UOM");
-        unitRef.current?.focus();
-        return;
-      }
+    if (!quantity) {
+      sooner("Please fill the quantity");
+      unitRef.current?.focus();
+      return;
+    }
+    if (!width) {
+      sooner("Please fill the width");
+      unitRef.current?.focus();
+      return;
+    }
+    if (!height) {
+      sooner("Please fill the height");
+      unitRef.current?.focus();
+      return;
+    }
   
       try {
         const newUnitData = {
-          unit,
-          description: unitDesc,
-          user: getUserID(),
+          PalletBarcode: palletBarcode,
+          Qty: quantity,
+          Height: height,
+          Width: width,
+          CreatedBy: getUserID(),
         };
-  
-        const response = await axios.post<SaveApiResponse>(`${BACKEND_URL}/api/master/insert-uom-details`, newUnitData, {
+
+        const response = await axios.post(`${BACKEND_URL}/api/master/insert-pallet-master`, newUnitData, {
           headers: { 
             'Content-Type': 'application/json',
             authorization: `Bearer ${token}`
           },
         });
   
-        const { status, message } = response.data;
+        const { Status, Message } = response.data[0];
   
-        if (status === 'Success') {
+        if (Status === 'T') {
           toast({
             title: 'Success',
-            description: message,
+            description: Message,
           });
           fetchData();
           handleCancel();
@@ -181,10 +195,10 @@ const UOMMaster: React.FC = () => {
           //   UserId: getUserID(),
           //   PlantCode: getUserPlant(),
           // });
-        } else if (status === 'Failure') {
+        } else if (Status === 'F') {
           toast({
             title: 'Error',
-            description: message,
+            description: Message,
             variant: 'destructive'
           });
         } else {
@@ -207,36 +221,46 @@ const UOMMaster: React.FC = () => {
   
     const handleUpdate = async () => {
       if (!selectedUnit) return;
-      if (!unit) {
-        sooner("Please fill the unit for UOM");
-        unitRef.current?.focus();
-        return;
-      }
-      if (!unitDesc) {
-        sooner("Please fill the unit description for UOM");
-        unitRef.current?.focus();
-        return;
-      }
+    if (!palletBarcode) {
+      sooner("Please fill the pallet barcode");
+      unitRef.current?.focus();
+      return;
+    }
+    if (!quantity) {
+      sooner("Please fill the quantity");
+      unitRef.current?.focus();
+      return;
+    }
+    if (!width) {
+      sooner("Please fill the width");
+      unitRef.current?.focus();
+      return;
+    }
+    if (!height) {
+      sooner("Please fill the height");
+      unitRef.current?.focus();
+      return;
+    }
       try {
         const updatedUnit = {
-          unit,
-          description: unitDesc,
-          user: getUserID(),
+          PalletBarcode: palletBarcode,
+          Qty: quantity,
+          UpdatedBy: getUserID(),
         };
   
-        const response = await axios.patch<UpdateApiResponse>(`${BACKEND_URL}/api/master/update-uom-details`, updatedUnit, {
+        const response = await axios.post(`${BACKEND_URL}/api/master/update-pallet-master`, updatedUnit, {
           headers: { 
             'Content-Type': 'application/json',
             authorization: `Bearer ${token}`
           },
         });
   
-        const { status, message } = response.data;
+        const { Status, Message } = response.data[0];
   
-        if (status === 'Success') {
+        if (Status === 'T') {
           toast({
             title: "Success",
-            description: message
+            description: Message
           });
           fetchData();
           handleCancel();
@@ -251,10 +275,10 @@ const UOMMaster: React.FC = () => {
           //   UserId: getUserID(),
           //   PlantCode: getUserPlant()
           // });
-        } else if (status === 'Failure') {
+        } else if (Status === 'F') {
           toast({
             title: "Error",
-            description: message,
+            description: Message,
             variant: "destructive"
           });
         } else {
@@ -268,7 +292,7 @@ const UOMMaster: React.FC = () => {
         console.error('Error updating data:', error);
         toast({
           title: "Error",
-          description: "Failed to update UOM",
+          description: "Failed to update Pallet Barcode",
           variant: "destructive"
         });
       }
@@ -276,7 +300,7 @@ const UOMMaster: React.FC = () => {
   
     const filteredData = useMemo(() => {
       return data.filter(item => {
-        const searchableFields: (keyof UnitData)[] = ['Description', 'Unit','UpdatedBy','CreatedBy'];
+        const searchableFields: (keyof PalletData)[] = ['PalletBarcode', 'Qty', 'Height', 'Width', 'Status', 'CreatedBy', 'UpdatedBy'];
         return searchableFields.some(key => {
           const value = item[key];
           return value != null && value.toString().toLowerCase().includes(searchTerm.toLowerCase());
@@ -302,30 +326,57 @@ const UOMMaster: React.FC = () => {
     <>
       <Card className="w-full mx-auto mt-5">
         <CardHeader>
-          <CardTitle>UOM Master <span className='font-normal text-sm text-muted-foreground'>(* Fields Are Mandatory)</span></CardTitle>
+          <CardTitle>Pallet Master <span className='font-normal text-sm text-muted-foreground'>(* Fields Are Mandatory)</span></CardTitle>
         </CardHeader>
         <CardContent>
           <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="categoryCode">Unit *</Label>
+                <Label htmlFor="palletBarcode">Pallet Barcode *</Label>
                 <Input 
-                  id="categoryCode" 
-                  value={unit} 
-                  onChange={(e) => setUnit(e.target.value)} 
+                  id="palletBarcode" 
+                  value={palletBarcode} 
+                  onChange={(e) => setPalletBarcode(e.target.value)} 
                   ref={unitRef}
                   required 
                   disabled={isEditing}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="categoryDesc">Description *</Label>
+                <Label htmlFor="quantity">Quantity *</Label>
                 <Input 
-                  id="categoryDesc" 
-                  value={unitDesc} 
-                  ref={descRef}
-                  onChange={(e) => setUnitDesc(e.target.value)} 
+                     type='number'
+                  id="quantity" 
+                  value={quantity} 
+                  onChange={(e) => setQuantity(Number(e.target.value))} 
                   required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="width">Width *</Label>
+                <Input 
+                    type='number'
+                  id="width" 
+                  value={width} 
+                  onChange={(e) => setWidth(Number(e.target.value))} 
+                  required 
+                  disabled={isEditing}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="height">Height *</Label>
+                <Input 
+                    type='number'
+                  id="height" 
+                  value={height} 
+                  onChange={(e) => setHeight(Number(e.target.value))} 
+                  required 
+                  disabled={isEditing}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && isEditing && document.activeElement === e.target) {
+                      handleUpdate();
+                    }
+                  }}
                 />
               </div>
             </div>
@@ -357,8 +408,11 @@ const UOMMaster: React.FC = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Select</TableHead>
-                  <TableHead>UNIT</TableHead>
-                  <TableHead>UNIT Description</TableHead>
+                  <TableHead>Pallet Barcode</TableHead>
+                  <TableHead>Quantity</TableHead>
+                  <TableHead>Height</TableHead>
+                  <TableHead>Width</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Created by</TableHead>
                   <TableHead>Created on</TableHead>
                   <TableHead>Updated by</TableHead>
@@ -367,16 +421,19 @@ const UOMMaster: React.FC = () => {
               </TableHeader>
               <TableBody>
                 {filteredData.map((row) => (
-                  <TableRow key={row.Unit}>
+                  <TableRow key={row.id}>
                     <TableCell>
                       <Button variant={'ghost'} onClick={() => handleRowSelect(row)}>Select</Button>
                     </TableCell>
-                    <TableCell>{row.Unit}</TableCell>
-                    <TableCell>{row.Description}</TableCell>
+                    <TableCell>{row.PalletBarcode}</TableCell>
+                    <TableCell>{row.Qty}</TableCell>
+                    <TableCell>{row.Height}</TableCell>
+                    <TableCell>{row.Width}</TableCell>
+                    <TableCell>{row.Status}</TableCell>
                     <TableCell>{row.CreatedBy}</TableCell>
                     <TableCell>{new Date(row.CreatedOn).toLocaleDateString()}</TableCell>
                     <TableCell>{row.UpdatedBy}</TableCell>
-                    <TableCell>{row.UpdatedOn? new Date(row.UpdatedOn).toLocaleDateString(): ""}</TableCell>
+                    <TableCell>{row.UpdatedOn ? new Date(row.UpdatedOn).toLocaleDateString() : ""}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -440,4 +497,4 @@ const UOMMaster: React.FC = () => {
   );
 };
 
-export default UOMMaster;
+export default PalletMaster;

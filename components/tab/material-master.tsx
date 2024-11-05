@@ -79,6 +79,7 @@ const MaterialMaster: React.FC = () => {
   const [lotControlled, setLotControlled] = useState(false);
   const [tolerance, setTolerance] =  useState<number | string>('');
   const [materials, setMaterials] = useState<Material[]>([]);
+
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [units, setUnits] = useState<DropdownOption[]>([]);
@@ -98,7 +99,7 @@ const MaterialMaster: React.FC = () => {
   const [plantCode , setPlantCode] = useState<string>('');
   const [flag , setFlag] = useState<string>('');
   const [plantCodes, setPlantCodes] = useState<DropdownOption[]>([]);
-
+  const token =Cookies.get('token')
 
   const materialCodeRef = useRef<HTMLInputElement>(null);
   const materialDescRef = useRef<HTMLInputElement>(null);
@@ -125,16 +126,16 @@ const MaterialMaster: React.FC = () => {
       await fetchUnitCode();
       await delay(50);
       
-      await insertAuditTrail({
-        AppType: "Web",
-        Activity: "Material Master",
-        Action: `Material Master Opened by ${getUserID()}`,
-        NewData: "",
-        OldData: "",
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: ""
-      });
+      // await insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Material Master",
+      //   Action: `Material Master Opened by ${getUserID()}`,
+      //   NewData: "",
+      //   OldData: "",
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: ""
+      // });
     };
     fetchDataSequentially();
   }, []);
@@ -174,7 +175,11 @@ const MaterialMaster: React.FC = () => {
 
   const fetchUnitCode = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/all-uom-unit`);
+      const response = await fetch(`${BACKEND_URL}/api/master/all-uom-unit`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       const data: UnitCode[] = await response.json();
       setUnits(data.map(item => ({ value: item.Unit, label: item.Unit })));
     } catch (error) {
@@ -187,7 +192,11 @@ const MaterialMaster: React.FC = () => {
   const fetchPlantCodes = async () => {
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-code`);
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-code`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       const data: PlantCode[] = await response.json();
       setPlantCodes(data.map(item => ({ value: item.PlantCode, label: item.PlantCode })));
     } catch (error) {
@@ -200,7 +209,11 @@ const MaterialMaster: React.FC = () => {
   const fetchMaterials = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/get-all-material-details`);
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-material-details`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       const data: Material[] = await response.json();
       setMaterials(data);
     } catch (error) {
@@ -298,7 +311,10 @@ const MaterialMaster: React.FC = () => {
 
       const response = await fetch(`${BACKEND_URL}/api/master/insert-material-details`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(newMaterial),
       });
       const data = await response.json();
@@ -307,16 +323,16 @@ const MaterialMaster: React.FC = () => {
         fetchMaterials();
         handleCancel();
 
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Material Master",
-          Action: `New Material Added by ${getUserID()}`,
-          NewData: JSON.stringify(newMaterial),
-          OldData: "",
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: companyCode,
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Material Master",
+        //   Action: `New Material Added by ${getUserID()}`,
+        //   NewData: JSON.stringify(newMaterial),
+        //   OldData: "",
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: companyCode,
+        // });
       } else if (data[0].RES === "Duplicate") {
         toast({ title: "Error", description: "Material Code already exists", variant: "destructive" });
       } else {
@@ -357,7 +373,10 @@ const MaterialMaster: React.FC = () => {
 
       const response = await fetch(`${BACKEND_URL}/api/master/update-material-details`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(updatedMaterial),
       });
       const data = await response.json();
@@ -368,16 +387,16 @@ const MaterialMaster: React.FC = () => {
 
         const oldMaterial = materials.find(m => m.M_Id === selectedId);
         if (oldMaterial) {
-          insertAuditTrail({
-            AppType: "Web",
-            Activity: "Material Master",
-            Action: `Material Updated by ${getUserID()}`,
-            NewData: JSON.stringify(updatedMaterial),
-            OldData: JSON.stringify(oldMaterial),
-            Remarks: "",
-            UserId: getUserID(),
-            PlantCode: companyCode
-          });
+          // insertAuditTrail({
+          //   AppType: "Web",
+          //   Activity: "Material Master",
+          //   Action: `Material Updated by ${getUserID()}`,
+          //   NewData: JSON.stringify(updatedMaterial),
+          //   OldData: JSON.stringify(oldMaterial),
+          //   Remarks: "",
+          //   UserId: getUserID(),
+          //   PlantCode: companyCode
+          // });
         }
       } else {
         toast({ title: "Error", description: "Failed to update material", variant: "destructive" });
@@ -410,16 +429,16 @@ const MaterialMaster: React.FC = () => {
     setIsEditing(true);
     setShowAdditionalDetails(true)
    
-    insertAuditTrail({
-      AppType: "Web",
-      Activity: "Material Master",
-      Action: `Edit initiated by ${getUserID()}`,
-      NewData: "",
-      OldData: JSON.stringify(material),
-      Remarks: "Material selected for editing",
-      UserId: getUserID(),
-      PlantCode: material.CompanyCode
-    });
+    // insertAuditTrail({
+    //   AppType: "Web",
+    //   Activity: "Material Master",
+    //   Action: `Edit initiated by ${getUserID()}`,
+    //   NewData: "",
+    //   OldData: JSON.stringify(material),
+    //   Remarks: "Material selected for editing",
+    //   UserId: getUserID(),
+    //   PlantCode: material.CompanyCode
+    // });
   };
 
   const handleCancel = () => {

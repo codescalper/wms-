@@ -86,7 +86,7 @@ const WarehouseMaster: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-
+  const token  = Cookies.get('token');
   useEffect(() => {
     const executeSequentially = async () => {
       await fetchPlantCodes();
@@ -98,16 +98,16 @@ const WarehouseMaster: React.FC = () => {
       await fetchWarehouseData();
       await delay(50);
   
-      await insertAuditTrail({
-        AppType: "Web",
-        Activity: "Warehouse Master",
-        Action: `Warehouse Master Opened by ${getUserID()}`,
-        NewData: "",
-        OldData: "",
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: getUserPlant()
-      });
+      // await insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Warehouse Master",
+      //   Action: `Warehouse Master Opened by ${getUserID()}`,
+      //   NewData: "",
+      //   OldData: "",
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: getUserPlant()
+      // });
     };
   
     executeSequentially();
@@ -116,7 +116,11 @@ const WarehouseMaster: React.FC = () => {
   const fetchPlantCodes = async () => {
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-code`);
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-plant-code`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       const data: PlantCode[] = await response.json();
       setPlantCodes(data.map(item => ({ value: item.PlantCode, label: item.PlantCode })));
     } catch (error) {
@@ -128,7 +132,11 @@ const WarehouseMaster: React.FC = () => {
   const fetchCategoryCodes = async () => {
     
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/get-all-warehouse-Ccode`);
+      const response = await fetch(`${BACKEND_URL}/api/master/get-all-warehouse-Ccode`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       const data: CategoryCode[] = await response.json();
       setCategoryCodes(data.map(item => ({ value: item.CategoryCode, label: item.CategoryCode })));
     } catch (error) {
@@ -139,7 +147,11 @@ const WarehouseMaster: React.FC = () => {
 
   const fetchWarehouseData = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/master/wh-all-details`);
+      const response = await fetch(`${BACKEND_URL}/api/master/wh-all-details`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       
       const data: WarehouseData[] = await response.json();
       setWarehouseData(Array.isArray(data) ? data : []);
@@ -212,7 +224,10 @@ const handleSearch = useCallback((term: string) => {
 
       const response = await fetch(`${BACKEND_URL}/api/master/wh-insert-details`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(newWarehouseData),
       });
 
@@ -221,16 +236,16 @@ const handleSearch = useCallback((term: string) => {
         fetchWarehouseData();
         handleCancel();
 
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Warehouse Master",
-          Action: `New Warehouse Added by ${getUserID()}`,
-          NewData: JSON.stringify(newWarehouseData),
-          OldData: "",
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: plantCode
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Warehouse Master",
+        //   Action: `New Warehouse Added by ${getUserID()}`,
+        //   NewData: JSON.stringify(newWarehouseData),
+        //   OldData: "",
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: plantCode
+        // });
       } else {
         throw new Error('Failed to insert');
       }
@@ -276,6 +291,10 @@ const handleSearch = useCallback((term: string) => {
       const response = await axios.patch(`${BACKEND_URL}/api/master/wh-update-details`, {
         ID: selectedId,
         ...updatedWarehouseData
+      }, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
       });
   
       if (response.status === 200) {
@@ -284,16 +303,16 @@ const handleSearch = useCallback((term: string) => {
         handleCancel();
   
         // Insert audit trail for update action
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Warehouse Master",
-          Action: `Warehouse Updated by ${getUserID()}`,
-          NewData: changedFields.join(", "),
-          OldData: JSON.stringify(oldData),
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: plantCode
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Warehouse Master",
+        //   Action: `Warehouse Updated by ${getUserID()}`,
+        //   NewData: changedFields.join(", "),
+        //   OldData: JSON.stringify(oldData),
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: plantCode
+        // });
       } else {
           toast({
             title: "Error",
@@ -319,16 +338,16 @@ const handleSearch = useCallback((term: string) => {
     setSelectedId(row.id);
     setIsEditing(true);
 
-    insertAuditTrail({
-      AppType: "Web",
-      Activity: "Warehouse Master",
-      Action: `Warehouse Edit Initiated by ${getUserID()}`,
-      NewData: "",
-      OldData: JSON.stringify(row),
-      Remarks: "",
-      UserId: getUserID(),
-      PlantCode: row.PlantCode
-    });
+    // insertAuditTrail({
+    //   AppType: "Web",
+    //   Activity: "Warehouse Master",
+    //   Action: `Warehouse Edit Initiated by ${getUserID()}`,
+    //   NewData: "",
+    //   OldData: JSON.stringify(row),
+    //   Remarks: "",
+    //   UserId: getUserID(),
+    //   PlantCode: row.PlantCode
+    // });
   };
 
   const handleCancel = () => {

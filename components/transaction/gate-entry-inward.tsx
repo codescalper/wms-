@@ -44,7 +44,7 @@ interface CompanyData {
 
 
 
-const CompanyMasterForm: React.FC = () => {
+const GateEntryInward: React.FC = () => {
   const [companyCode, setCompanyCode] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
@@ -499,4 +499,4 @@ const token  = Cookies.get('token');
   );
 };
 
-export default CompanyMasterForm;
+export default GateEntryInward;

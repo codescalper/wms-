@@ -86,6 +86,7 @@ const WarehouseLocationMaster: React.FC = () => {
   const [matCode, SetMatCode] = useState<DropdownOption[]>([]);
   const [restrictMatCode, setRestrictMatCode] = useState<string[]>([]);
   const { toast } = useToast();
+  const token = Cookies.get('token');
 
  const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
  const [height, setHeight] = useState("");
@@ -101,7 +102,12 @@ const [searchTerm, setSearchTerm] = useState('');
  
  const fetchUnitCode = async () => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/master/all-uom-unit`);
+    const token = Cookies.get('token');
+    const response = await fetch(`${BACKEND_URL}/api/master/all-uom-unit`, {
+      headers: {
+      'authorization': `Bearer ${token}`
+      }
+    });
     const data: UnitCode[] = await response.json();
     setUnits(data.map(item => ({ value: item.Unit, label: item.Unit })));
   } catch (error) {
@@ -112,7 +118,12 @@ const [searchTerm, setSearchTerm] = useState('');
 
 const fetchMatCode = async () => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/master/get-all-mat-code`);
+    const token = Cookies.get('token');
+    const response = await fetch(`${BACKEND_URL}/api/master/get-all-mat-code`, {
+      headers: {
+      'authorization': `Bearer ${token}`
+      }
+    });
     const data: MatCode[] = await response.json();
     SetMatCode(data.map(item => ({ value: item.MatCode, label: item.MatCode })));
   } catch (error) {
@@ -150,23 +161,27 @@ const fetchMatCode = async () => {
       await delay(50);
       
       // Insert audit trail for page load
-      await insertAuditTrail({
-        AppType: "Web",
-        Activity: "Warehouse Location Master",
-        Action: `Warehouse Location Master Opened by ${getUserID()}`,
-        NewData: "",
-        OldData: "",
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: getUserPlant()
-      });
+      // await insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Warehouse Location Master",
+      //   Action: `Warehouse Location Master Opened by ${getUserID()}`,
+      //   NewData: "",
+      //   OldData: "",
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: getUserPlant()
+      // });
     };
     fetchDataSequentially();
   }, []);
 
   const fetchWarehouseCodes = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/master/get-all-wh-code`);
+      const response = await axios.get(`${BACKEND_URL}/api/master/get-all-wh-code`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       if (response.status === 200) {
         setWarehouseCodes(response.data);
       } else {
@@ -187,7 +202,11 @@ const fetchMatCode = async () => {
 
   const fetchLocations = async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/master/get-all-wh-location`);
+      const response = await axios.get(`${BACKEND_URL}/api/master/get-all-wh-location`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       if (response.status === 200) {
         setLocations(response.data);
       } else {
@@ -261,20 +280,24 @@ const fetchMatCode = async () => {
       WarehouseCode: warehouseValue.trim(),
       Location: location.trim(),
       Rack: rack.trim(),
-      Bin: bin.trim(),
+      Bin: bin.trim() === '' ? null : bin.trim(),
       UniqueCode: uniqueCode.trim(),
       User: userID.trim(),
       WStatus: status.trim(),
-      Height: height.trim(),
-      Width: width.trim(),
-      UOM: uom.trim(),
-      Length: length.trim(),
-      Capacity: capacity.trim(),
-      RestrictToMaterial:restrictMatCode ? restrictMatCode.join(',') : '',
+      Height: height.trim() === '' ? null : height.trim(),
+      Width: width.trim() === '' ? null : width.trim(),
+      UOM: uom.trim() === '' ? null : uom.trim(),
+      Length: length.trim() === '' ? null : length.trim(),
+      Capacity: capacity.trim() === '' ? null : capacity.trim(),
+      RestrictToMaterial: restrictMatCode.length === 0 ? null : restrictMatCode.join(','),
     };
 
     try {
-      const response = await axios.post(`${BACKEND_URL}/api/master/insert-wh-location`, newLocationData);
+      const response = await axios.post(`${BACKEND_URL}/api/master/insert-wh-location`, newLocationData, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
 
       if (response.status === 200) {
         toast({
@@ -284,16 +307,16 @@ const fetchMatCode = async () => {
         fetchLocations();
         resetForm();
 
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Warehouse Location Master",
-          Action: `Warehouse Location Added by ${userID}`,
-          NewData: JSON.stringify(newLocationData),
-          OldData: "",
-          Remarks: "",
-          UserId: userID,
-          PlantCode: ""
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Warehouse Location Master",
+        //   Action: `Warehouse Location Added by ${userID}`,
+        //   NewData: JSON.stringify(newLocationData),
+        //   OldData: "",
+        //   Remarks: "",
+        //   UserId: userID,
+        //   PlantCode: ""
+        // });
       } else {
         toast({
           title: "Error",
@@ -341,7 +364,11 @@ const fetchMatCode = async () => {
     };
 
     try {
-      const response = await axios.patch(`${BACKEND_URL}/api/master/update-wh-location`, updatedLocationData);
+      const response = await axios.patch(`${BACKEND_URL}/api/master/update-wh-location`, updatedLocationData, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
 
       if (response.status === 200) {
         toast({
@@ -363,16 +390,16 @@ const fetchMatCode = async () => {
           if (oldData.RestrictToMaterial !== restrictToMaterial) changedFields.push(`RestrictToMaterial: ${oldData.RestrictToMaterial} -> ${restrictToMaterial}`);
         }
 
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Warehouse Location Master",
-          Action: `Warehouse Location Updated by ${userID}`,
-          NewData: changedFields.join(", "),
-          OldData: oldData ? JSON.stringify(oldData) : "",
-          Remarks: "",
-          UserId: userID,
-          PlantCode: ""
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Warehouse Location Master",
+        //   Action: `Warehouse Location Updated by ${userID}`,
+        //   NewData: changedFields.join(", "),
+        //   OldData: oldData ? JSON.stringify(oldData) : "",
+        //   Remarks: "",
+        //   UserId: userID,
+        //   PlantCode: ""
+        // });
       } else {
         toast({
           title: "Error",
@@ -412,6 +439,7 @@ const fetchMatCode = async () => {
     setLength("");
     setCapacity("");
     setRestrictMatCode([]);
+    setIsUpdating(false);
     setShowAdditionalDetails(false);
   };
 
@@ -432,19 +460,19 @@ const fetchMatCode = async () => {
     setCapacity(location.Capacity || "");
     setRestrictMatCode(location.RestrictToMaterial?.split(',') || null);
     setIsUpdating(true);
-    const hasAdditionalData = location.Height===null || location.Width===null || location.UOM===null || location.Length===null || location.Capacity===null|| location.RestrictToMaterial==='';
+    const hasAdditionalData = location.Height==='' && location.Width==='' && location.UOM==='' && location.Length==='' && location.Capacity===''&& location.RestrictToMaterial==='';
     setShowAdditionalDetails(!hasAdditionalData);
-    console.log(!hasAdditionalData)
-    insertAuditTrail({
-      AppType: "Web",
-      Activity: "Warehouse Location Master",
-      Action: `Warehouse Location Edit Initiated by ${getUserID()}`,
-      NewData: "",
-      OldData: JSON.stringify(location),
-      Remarks: "",
-      UserId: getUserID(),
-      PlantCode: ""
-    });
+    console.log("Checking value bhai",hasAdditionalData)
+    // insertAuditTrail({
+    //   AppType: "Web",
+    //   Activity: "Warehouse Location Master",
+    //   Action: `Warehouse Location Edit Initiated by ${getUserID()}`,
+    //   NewData: "",
+    //   OldData: JSON.stringify(location),
+    //   Remarks: "",
+    //   UserId: getUserID(),
+    //   PlantCode: ""
+    // });
   };
 
   const warehouseOptions = warehouseCodes.map(code => ({
@@ -502,7 +530,7 @@ const fetchMatCode = async () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Deactive">Deactive</SelectItem>
+                    <SelectItem value="Inactive">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

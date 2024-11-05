@@ -63,11 +63,16 @@ const WarehouseCategoryMaster: React.FC = () => {
   const warehouseCategoryDesccRef = useRef<HTMLInputElement>(null);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+  const token = Cookies.get('token');
 
 
   const fetchData = useCallback(async () => {
     try {
-      const response = await axios.get(`${BACKEND_URL}/api/master/get-all-warehouse-category`);
+      const response = await axios.get(`${BACKEND_URL}/api/master/get-all-warehouse-category`, {
+        headers: {
+          'authorization': `Bearer ${token}`
+        }
+      });
       setData(response.data);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -84,16 +89,16 @@ const WarehouseCategoryMaster: React.FC = () => {
       await delay(20);
       fetchData();
       await delay(50);
-      await insertAuditTrail({
-        AppType: "Web",
-        Activity: "Warehouse Category Master",
-        Action: `Warehouse Category Master Opened by ${getUserID()}`,
-        NewData: "",
-        OldData: "",
-        Remarks: "",
-        UserId: getUserID(),
-        PlantCode: getUserPlant()
-      });
+      // await insertAuditTrail({
+      //   AppType: "Web",
+      //   Activity: "Warehouse Category Master",
+      //   Action: `Warehouse Category Master Opened by ${getUserID()}`,
+      //   NewData: "",
+      //   OldData: "",
+      //   Remarks: "",
+      //   UserId: getUserID(),
+      //   PlantCode: getUserPlant()
+      // });
     };
     executeSequentially();
   }, [fetchData]);
@@ -136,16 +141,16 @@ const WarehouseCategoryMaster: React.FC = () => {
     setSelectedId(row.WID);
     setIsEditing(true);
     setOldData(row);
-    insertAuditTrail({
-      AppType: "Web",
-      Activity: "Warehouse Category Master",
-      Action: `Category Edit Initiated by ${getUserID()}`,
-      NewData: "",
-      OldData: JSON.stringify(row),
-      Remarks: "",
-      UserId: getUserID(),
-      PlantCode: row.CategoryCode
-    });
+    // insertAuditTrail({
+    //   AppType: "Web",
+    //   Activity: "Warehouse Category Master",
+    //   Action: `Category Edit Initiated by ${getUserID()}`,
+    //   NewData: "",
+    //   OldData: JSON.stringify(row),
+    //   Remarks: "",
+    //   UserId: getUserID(),
+    //   PlantCode: row.CategoryCode
+    // });
   };
 
   const handleCancel = () => {
@@ -176,7 +181,10 @@ const WarehouseCategoryMaster: React.FC = () => {
       };
 
       const response = await axios.post(`${BACKEND_URL}/api/master/insert-warehouse-category`, newCategoryData, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
       });
 
       if (response.status === 200) {
@@ -186,16 +194,16 @@ const WarehouseCategoryMaster: React.FC = () => {
         });
         fetchData();
         handleCancel();
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Warehouse Category Master",
-          Action: `New Category Added by ${getUserID()}`,
-          NewData: JSON.stringify(newCategoryData),
-          OldData: "",
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: categoryCode
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Warehouse Category Master",
+        //   Action: `New Category Added by ${getUserID()}`,
+        //   NewData: JSON.stringify(newCategoryData),
+        //   OldData: "",
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: categoryCode
+        // });
       } else {
         toast({
           title: "Error",
@@ -235,7 +243,10 @@ const WarehouseCategoryMaster: React.FC = () => {
       };
 
       const response = await axios.patch(`${BACKEND_URL}/api/master/update-warehouse-category`, updatedCategoryData, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
       });
 
       if (response.status === 200) {
@@ -249,16 +260,16 @@ const WarehouseCategoryMaster: React.FC = () => {
         const changedFields: string[] = [];
         if (oldData.CategoryDesc !== categoryDesc) changedFields.push(`Category Desc: ${oldData.CategoryDesc} -> ${categoryDesc}`);
 
-        insertAuditTrail({
-          AppType: "Web",
-          Activity: "Warehouse Category Master",
-          Action: `Category Updated by ${getUserID()}`,
-          NewData: changedFields.join(", "),
-          OldData: JSON.stringify(oldData),
-          Remarks: "",
-          UserId: getUserID(),
-          PlantCode: categoryCode
-        });
+        // insertAuditTrail({
+        //   AppType: "Web",
+        //   Activity: "Warehouse Category Master",
+        //   Action: `Category Updated by ${getUserID()}`,
+        //   NewData: changedFields.join(", "),
+        //   OldData: JSON.stringify(oldData),
+        //   Remarks: "",
+        //   UserId: getUserID(),
+        //   PlantCode: categoryCode
+        // });
       } else {
         throw new Error('Failed to update');
       }

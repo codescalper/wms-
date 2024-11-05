@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import bcrypt from 'bcryptjs';
 import { BACKEND_URL } from '@/lib/constants';
 import insertAuditTrail from '@/utills/insertAudit';
 
 const ChangePassword = () => {
   const { toast } = useToast();
+  const token = Cookies.get('token');
   const [formData, setFormData] = useState({
     userName: '',
     userId: '',
@@ -84,7 +84,10 @@ const ChangePassword = () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/admin/change-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           userId,
           oldUserPassword: oldPassword,

@@ -10,7 +10,6 @@ import { useToast } from "@/components/ui/use-toast";
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import { BACKEND_URL } from '@/lib/constants';
-import insertAuditTrail from '@/utills/insertAudit';
 import { jwtDecode } from 'jwt-decode';
 
 const Page = () => {
@@ -42,16 +41,6 @@ const Page = () => {
         const data = await response.json();
         const ipAddress = data.ip;
 
-        insertAuditTrail({
-          AppType: 'Web',
-          Activity: 'Login Page',
-          Action: 'Login Page Opened',
-          NewData: '',
-          OldData: '',
-          Remarks: `IP address is: ${ipAddress}`,
-          UserId: '',
-          PlantCode: '',
-        });
       } catch (error) {
         console.error('Error fetching IP address:', error);
       }
@@ -88,21 +77,20 @@ const Page = () => {
       const data = await response.json();
   
       if (response.ok) {
-        Cookies.set('token', data.token, { expires: 1 });
-        Cookies.set('login', 'true', { expires: 1 }); 
+        const decodedToken: any = jwtDecode(data.token);
+        if (decodedToken && decodedToken.user && decodedToken.user.User_ID) {
+          Cookies.set('token', data.token, { expires: 1 });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Error ❌",
+            description: "Invalid token received.",
+          });
+          return;
+        }
   
         router.push('/dashboard');
   
-        insertAuditTrail({
-          AppType: 'Web',
-          Activity: 'Login Page',
-          Action: 'User Logged in',
-          NewData: '',
-          OldData: '',
-          Remarks: '',
-          UserId: getUserID(),
-          PlantCode: '',
-        });
         
         toast({
           title: "Logged in ✅",

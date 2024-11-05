@@ -24,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
       <NextTopLoader color="blue" />
       <IdleTimerWrapper timeout={10 * 60 * 1000}> {/* 10 minutes */}
       <ThemeProvider
